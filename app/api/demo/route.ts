@@ -1,4 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
+import { ExternalAccountClient } from "google-auth-library";
+import { getVercelOidcToken } from "@vercel/oidc";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -15,6 +16,15 @@ type McpEnvelope = {
   id?: number | string;
   result?: unknown;
   error?: unknown;
+};
+
+type VertexResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: string }>;
+    };
+  }>;
+  error?: { message?: string };
 };
 
 function parseMcpBody(text: string): McpEnvelope {
@@ -109,30 +119,74 @@ async function callClickHouseMcp() {
 }
 
 async function callGemini(input: z.infer<typeof requestSchema>, clickHouseEvidence: unknown) {
-  const project = process.env.GOOGLE_CLOUD_PROJECT;
+  const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT_ID;
   const location = process.env.GOOGLE_CLOUD_LOCATION || "us-central1";
   const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const projectNumber = process.env.GCP_PROJECT_NUMBER;
+  const serviceAccountEmail = process.env.GCP_SERVICE_ACCOUNT_EMAIL;
+  const poolId = process.env.GCP_WORKLOAD_IDENTITY_POOL_ID;
+  const providerId = process.env.GCP_WORKLOAD_IDENTITY_PROVIDER_ID;
 
-  if (!project) {
+  if (!project || !projectNumber || !serviceAccountEmail || !poolId || !providerId) {
     return {
       ok: false as const,
       configured: false,
       recommendation:
         "Protect the next hard production dependency first: confirm remaining setup time, identify the earliest recoverable schedule beat, and require the 1st AD/UPM to approve any scene-order change.",
-      detail: "GOOGLE_CLOUD_PROJECT is not configured.",
+      detail:
+        "Google Cloud workload identity configuration is incomplete. Required: project, project number, service account email, pool ID, and provider ID.",
     };
   }
 
   try {
-    const ai = new GoogleGenAI({ vertexai: true, project, location });
+    const audience = `//iam.googleapis.com/projects/${projectNumber}/locations/global/workloadIdentityPools/${poolId}/providers/${providerId}`;
+    const authClient = ExternalAccountClient.fromJSON({
+      type: "external_account",
+      audience,
+      subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+      token_url: "https://sts.googleapis.com/v1/token",
+      service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccountEmail}:generateAccessToken`,
+      subject_token_supplier: {
+        getSubjectToken: getVercelOidcToken,
+      },
+    });
+
+    if (!authClient) throw new Error("Unable to initialize Google external-account client.");
+
+    const accessToken = await authClient.getAccessToken();
+    if (!accessToken.token) throw new Error("Google workload identity exchange returned no access token.");
+
     const prompt = `You are SetReady AI, a bounded production-intelligence assistant for film/TV crews.\n\nDisruption:\n- Scene: ${input.scene}\n- Delay: ${input.delayMinutes} minutes\n- Cause: ${input.cause}\n\nRuntime evidence from ClickHouse MCP:\n${JSON.stringify(clickHouseEvidence).slice(0, 1800)}\n\nReturn a concise operational recommendation for a 1st AD and UPM. Include: (1) immediate action, (2) schedule/economic risk, (3) one approval gate. Do not invent crew, cast, labor, weather, safety, or budget facts that were not supplied.`;
 
-    const response = await ai.models.generateContent({ model, contents: prompt });
+    const endpoint = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
+    const vertexResponse = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken.token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      }),
+    });
+
+    const payload = (await vertexResponse.json()) as VertexResponse;
+    if (!vertexResponse.ok) {
+      throw new Error(payload.error?.message || `Vertex AI request failed (${vertexResponse.status}).`);
+    }
+
+    const recommendation =
+      payload.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text || "")
+        .join("")
+        .trim() || "Gemini returned an empty response.";
+
     return {
       ok: true as const,
       configured: true,
-      recommendation: response.text?.trim() || "Gemini returned an empty response.",
-      detail: { model, location },
+      recommendation,
+      detail: { model, location, auth: "vercel-oidc-wif" },
     };
   } catch (error) {
     return {
@@ -149,7 +203,7 @@ export async function POST(request: Request) {
   try {
     const body = requestSchema.parse(await request.json());
     const clickhouse = await callClickHouseMcp();
-    const gemini = await callGemini(body, clickhouse.ok ? clickhouse.detail : clickhouse.detail);
+    const gemini = await callGemini(body, clickhouse.detail);
 
     return NextResponse.json({
       ok: clickhouse.ok && gemini.ok,
