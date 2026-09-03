@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@clickhouse/client";
+import { ExternalAccountClient } from "google-auth-library";
+import { getVercelOidcToken } from "@vercel/oidc";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -27,7 +29,31 @@ export async function POST(request: Request) {
   try {
     const input = disruptionSchema.parse(await request.json());
 
-    const project = required("GOOGLE_CLOUD_PROJECT");
+    // Reuse the existing Vercel -> Google Cloud Workload Identity Federation setup.
+    // No long-lived service-account key is stored in Vercel.
+    const project = process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || required("GCP_PROJECT_ID");
+    const projectNumber = required("GCP_PROJECT_NUMBER");
+    const serviceAccountEmail = required("GCP_SERVICE_ACCOUNT_EMAIL");
+    const workloadPoolId = required("GCP_WORKLOAD_IDENTITY_POOL_ID");
+    const workloadProviderId = required("GCP_WORKLOAD_IDENTITY_PROVIDER_ID");
+
+    const oidcToken = await getVercelOidcToken();
+    if (!oidcToken) throw new Error("Vercel OIDC token is unavailable; verify Secure Backend Access is enabled");
+
+    const authClient = ExternalAccountClient.fromJSON({
+      type: "external_account",
+      audience: `//iam.googleapis.com/projects/${projectNumber}/locations/global/workloadIdentityPools/${workloadPoolId}/providers/${workloadProviderId}`,
+      subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+      token_url: "https://sts.googleapis.com/v1/token",
+      service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccountEmail}:generateAccessToken`,
+      subject_token_supplier: {
+        getSubjectToken: async () => oidcToken,
+      },
+    } as any);
+
+    if (!authClient) throw new Error("Unable to initialize Google Workload Identity auth client");
+    authClient.scopes = ["https://www.googleapis.com/auth/cloud-platform"];
+
     const agent = process.env.GOOGLE_AGENT_ID || "antigravity-preview-05-2026";
     const mcpUrl = required("CLICKHOUSE_MCP_URL");
     const mcpToken = process.env.CLICKHOUSE_MCP_AUTH_TOKEN;
@@ -70,9 +96,14 @@ export async function POST(request: Request) {
     });
 
     const ai = new GoogleGenAI({
-      vertexai: true,
+      enterprise: true,
       project,
       location: "global",
+      googleAuthOptions: {
+        authClient: authClient as any,
+        projectId: project,
+        scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+      } as any,
     });
 
     const prompt = `You are SetReady AI, a bounded production-intelligence agent for film and television set operations.
@@ -172,6 +203,7 @@ Escalation trigger:`;
       eventId,
       recommendation,
       evidence: {
+        oidc: true,
         agentPlatform: true,
         agent,
         interactionId,
