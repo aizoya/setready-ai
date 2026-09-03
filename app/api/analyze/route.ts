@@ -4,6 +4,7 @@ import { createClient } from "@clickhouse/client";
 import { z } from "zod";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const disruptionSchema = z.object({
   production: z.string().min(2).max(120),
@@ -27,8 +28,9 @@ export async function POST(request: Request) {
     const input = disruptionSchema.parse(await request.json());
 
     const project = required("GOOGLE_CLOUD_PROJECT");
-    const location = required("GOOGLE_CLOUD_LOCATION");
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const agent = process.env.GOOGLE_AGENT_ID || "antigravity-preview-05-2026";
+    const mcpUrl = required("CLICKHOUSE_MCP_URL");
+    const mcpToken = process.env.CLICKHOUSE_MCP_AUTH_TOKEN;
 
     const clickhouseHost = required("CLICKHOUSE_HOST");
     const clickhouseDatabase = required("CLICKHOUSE_DATABASE");
@@ -42,6 +44,8 @@ export async function POST(request: Request) {
       password: clickhousePassword,
     });
 
+    // Deterministic persistence is intentionally separate from agent reasoning.
+    // The agent must use the official ClickHouse MCP server for analytical context.
     await clickhouse.command({
       query: `
         CREATE TABLE IF NOT EXISTS setready_events (
@@ -53,7 +57,7 @@ export async function POST(request: Request) {
           cause String,
           next_constraint String,
           recommendation String,
-          model String,
+          agent String,
           latency_ms UInt32
         ) ENGINE = MergeTree
         ORDER BY (created_at, event_id)
@@ -61,28 +65,23 @@ export async function POST(request: Request) {
       clickhouse_settings: { wait_end_of_query: 1 },
     });
 
-    const recentResult = await clickhouse.query({
-      query: `
-        SELECT production, scene, minutes_behind, cause, recommendation
-        FROM setready_events
-        WHERE production = {production:String}
-        ORDER BY created_at DESC
-        LIMIT 3
-      `,
-      query_params: { production: input.production },
-      format: "JSONEachRow",
-    });
-    const recentEvents = await recentResult.json();
-
     const ai = new GoogleGenAI({
       vertexai: true,
       project,
-      location,
-      apiVersion: "v1",
+      location: "global",
     });
 
-    const prompt = `You are SetReady AI, a bounded production-intelligence assistant for film/TV set operations.
-Your audience is the 1st AD and UPM. Do not invent facts. Do not make safety-critical, legal, union, or personnel decisions. Give one concise operational recommendation and explicitly state assumptions.
+    const prompt = `You are SetReady AI, a bounded production-intelligence agent for film and television set operations.
+Your audience is the 1st AD and UPM.
+
+MANDATORY TOOL STEP
+Use the attached ClickHouse MCP server before answering. Query the setready_events table for up to the 3 most recent records for production ${JSON.stringify(input.production)}. Treat that MCP result as historical context only. If no rows exist, continue and state that no prior events were found.
+
+BOUNDARIES
+- Do not invent facts.
+- Do not make safety-critical, legal, union, or personnel decisions.
+- Give one concise operational recommendation.
+- Explicitly state assumptions and an escalation trigger.
 
 CURRENT DISRUPTION
 Production: ${input.production}
@@ -91,26 +90,56 @@ Minutes behind: ${input.minutesBehind}
 Cause: ${input.cause}
 Next constraint: ${input.nextConstraint}
 
-RECENT CLICKHOUSE CONTEXT
-${JSON.stringify(recentEvents)}
-
 Return exactly these headings:
 Impact:
 Recommendation:
 Assumptions:
 Escalation trigger:`;
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        temperature: 0.2,
-        maxOutputTokens: 500,
-      },
-    });
+    const mcpTool: Record<string, unknown> = {
+      type: "mcp_server",
+      url: mcpUrl,
+      name: "clickhouse-setready",
+    };
+    if (mcpToken) {
+      mcpTool.headers = { Authorization: `Bearer ${mcpToken}` };
+    }
 
-    const recommendation = response.text?.trim();
-    if (!recommendation) throw new Error("Gemini returned an empty response");
+    const stream = await ai.interactions.create({
+      agent,
+      input: prompt,
+      environment: { type: "remote" },
+      tools: [mcpTool],
+      stream: true,
+      background: true,
+      store: true,
+    } as never);
+
+    let recommendation = "";
+    let interactionId = "";
+    let mcpUsed = false;
+
+    for await (const event of stream as AsyncIterable<unknown>) {
+      const evt = event as Record<string, any>;
+      if (evt.event_type === "interaction.created") {
+        interactionId = evt.interaction?.id || interactionId;
+      }
+      if (evt.event_type === "step.start") {
+        const stepType = String(evt.step?.type || "").toLowerCase();
+        const stepName = String(evt.step?.name || "").toLowerCase();
+        if (stepType.includes("mcp") || stepName.includes("clickhouse")) mcpUsed = true;
+      }
+      if (evt.event_type === "step.delta" && evt.delta?.type === "text" && evt.delta?.text) {
+        recommendation += String(evt.delta.text);
+      }
+      if (evt.event_type === "interaction.completed") {
+        interactionId = evt.interaction?.id || interactionId;
+      }
+    }
+
+    recommendation = recommendation.trim();
+    if (!recommendation) throw new Error("Agent Platform returned an empty recommendation");
+    if (!mcpUsed) throw new Error("ClickHouse MCP tool was not invoked; runtime verification failed");
 
     const eventId = crypto.randomUUID();
     const latencyMs = Date.now() - startedAt;
@@ -126,7 +155,7 @@ Escalation trigger:`;
         cause: input.cause,
         next_constraint: input.nextConstraint,
         recommendation,
-        model,
+        agent,
         latency_ms: latencyMs,
       }],
       format: "JSONEachRow",
@@ -137,11 +166,14 @@ Escalation trigger:`;
       eventId,
       recommendation,
       evidence: {
-        clickhouseReadRows: Array.isArray(recentEvents) ? recentEvents.length : 0,
+        agentPlatform: true,
+        agent,
+        interactionId,
+        clickhouseMcp: true,
+        clickhouseMcpServer: "mcp-clickhouse",
         clickhouseWrite: true,
-        model,
         googleCloudProject: project,
-        location,
+        location: "global",
         latencyMs,
       },
     });
