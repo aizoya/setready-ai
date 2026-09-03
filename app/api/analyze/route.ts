@@ -44,8 +44,6 @@ export async function POST(request: Request) {
       password: clickhousePassword,
     });
 
-    // Deterministic persistence is intentionally separate from agent reasoning.
-    // The agent must use the official ClickHouse MCP server for analytical context.
     await clickhouse.command({
       query: `
         CREATE TABLE IF NOT EXISTS setready_events (
@@ -111,11 +109,9 @@ Escalation trigger:`;
         : {}),
     };
 
-    // Keep stream:true as a literal so @google/genai selects the streaming overload.
     const stream = await ai.interactions.create({
       agent: agent as any,
       input: prompt,
-      environment: { type: "remote" },
       tools: [mcpTool as any],
       stream: true,
       background: true,
