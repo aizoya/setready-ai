@@ -57,11 +57,17 @@ export async function POST(request: Request) {
           cause String,
           next_constraint String,
           recommendation String,
-          agent String,
+          model String DEFAULT '',
+          agent String DEFAULT '',
           latency_ms UInt32
         ) ENGINE = MergeTree
         ORDER BY (created_at, event_id)
       `,
+      clickhouse_settings: { wait_end_of_query: 1 },
+    });
+
+    await clickhouse.command({
+      query: "ALTER TABLE setready_events ADD COLUMN IF NOT EXISTS agent String DEFAULT ''",
       clickhouse_settings: { wait_end_of_query: 1 },
     });
 
@@ -155,6 +161,7 @@ Escalation trigger:`;
         cause: input.cause,
         next_constraint: input.nextConstraint,
         recommendation,
+        model: "Gemini via Agent Platform",
         agent,
         latency_ms: latencyMs,
       }],
