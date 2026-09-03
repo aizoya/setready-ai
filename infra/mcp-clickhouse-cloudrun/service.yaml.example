@@ -1,0 +1,34 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: setready-clickhouse-mcp
+spec:
+  template:
+    spec:
+      containerConcurrency: 20
+      timeoutSeconds: 60
+      containers:
+        - image: ghcr.io/clickhouse/mcp-clickhouse:0.4.1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CLICKHOUSE_HOST
+              value: lex38gonim.us-central1.gcp.clickhouse.cloud
+            - name: CLICKHOUSE_PORT
+              value: "8443"
+            - name: CLICKHOUSE_SECURE
+              value: "true"
+            - name: CLICKHOUSE_VERIFY
+              value: "true"
+            - name: CLICKHOUSE_DATABASE
+              value: default
+            - name: CLICKHOUSE_MCP_SERVER_TRANSPORT
+              value: http
+            - name: CLICKHOUSE_MCP_BIND_HOST
+              value: 0.0.0.0
+            - name: CLICKHOUSE_MCP_BIND_PORT
+              value: "8080"
+            - name: CLICKHOUSE_ALLOW_WRITE_ACCESS
+              value: "false"
+            # Add CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_MCP_AUTH_TOKEN,
+            # and CLICKHOUSE_MCP_ALLOWED_HOSTS through Cloud Run/Secret Manager.
