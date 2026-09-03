@@ -1,0 +1,27 @@
+-- SetReady AI ClickHouse bootstrap
+-- Replace <MCP_READONLY_PASSWORD> locally before running. Never commit the real password.
+
+CREATE TABLE IF NOT EXISTS default.setready_events (
+  event_id String,
+  created_at DateTime64(3),
+  production String,
+  scene String,
+  minutes_behind UInt16,
+  cause String,
+  next_constraint String,
+  recommendation String,
+  model String DEFAULT '',
+  agent String DEFAULT '',
+  latency_ms UInt32
+) ENGINE = MergeTree
+ORDER BY (created_at, event_id);
+
+-- Dedicated read-only identity for the official mcp-clickhouse server.
+CREATE USER IF NOT EXISTS setready_mcp
+IDENTIFIED WITH sha256_password BY '<MCP_READONLY_PASSWORD>';
+
+GRANT SELECT ON default.setready_events TO setready_mcp;
+
+-- Verification queries
+SHOW GRANTS FOR setready_mcp;
+SELECT count() AS existing_setready_events FROM default.setready_events;
