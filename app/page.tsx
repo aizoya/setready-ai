@@ -8,9 +8,12 @@ type AnalysisResult = {
   recommendation?: string;
   error?: string;
   evidence?: {
-    clickhouseReadRows: number;
+    agentPlatform: boolean;
+    agent: string;
+    interactionId: string;
+    clickhouseMcp: boolean;
+    clickhouseMcpServer: string;
     clickhouseWrite: boolean;
-    model: string;
     googleCloudProject: string;
     location: string;
     latencyMs: number;
@@ -65,7 +68,7 @@ export default function Home() {
           <span className="status">Golden-path demo</span>
           <h2>Analyze a production disruption.</h2>
           <p>
-            Deterministic validation → ClickHouse context → Gemini analysis on Google Cloud → ClickHouse evidence write.
+            Deterministic validation → Gemini Enterprise Agent Platform → official ClickHouse MCP context → bounded recommendation → ClickHouse evidence write.
           </p>
         </div>
 
@@ -106,10 +109,12 @@ export default function Home() {
           {result.error && <p>{result.error}</p>}
           {result.evidence && (
             <div className="evidenceGrid">
-              <span>Gemini: {result.evidence.model}</span>
+              <span>Agent Platform: {result.evidence.agentPlatform ? "verified" : "not verified"}</span>
+              <span>Agent: {result.evidence.agent}</span>
+              <span>Interaction: {result.evidence.interactionId ? result.evidence.interactionId.slice(0, 18) : "not returned"}</span>
+              <span>ClickHouse MCP: {result.evidence.clickhouseMcp ? result.evidence.clickhouseMcpServer : "not verified"}</span>
+              <span>ClickHouse evidence write: {result.evidence.clickhouseWrite ? "confirmed" : "not confirmed"}</span>
               <span>Google Cloud: {result.evidence.location}</span>
-              <span>ClickHouse read: {result.evidence.clickhouseReadRows} prior rows</span>
-              <span>ClickHouse write: {result.evidence.clickhouseWrite ? "confirmed" : "not confirmed"}</span>
               <span>Latency: {result.evidence.latencyMs} ms</span>
             </div>
           )}
@@ -117,10 +122,10 @@ export default function Home() {
       )}
 
       <section className="grid technologyGrid">
-        <article><strong>Gemini</strong><span>Reasoning & bounded recommendation</span></article>
-        <article><strong>Google Cloud</strong><span>Gemini Enterprise / Vertex runtime</span></article>
-        <article><strong>ClickHouse</strong><span>Runtime context, telemetry & evidence</span></article>
-        <article><strong>Deterministic controls</strong><span>Validation, state boundaries & writes</span></article>
+        <article><strong>Gemini</strong><span>Reasoning through a managed production agent</span></article>
+        <article><strong>Google Cloud Agent Builder</strong><span>Gemini Enterprise Agent Platform orchestration</span></article>
+        <article><strong>ClickHouse MCP</strong><span>Official MCP runtime context for production history</span></article>
+        <article><strong>Deterministic controls</strong><span>Validation, persistence boundaries & auditable writes</span></article>
       </section>
     </main>
   );
