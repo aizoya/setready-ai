@@ -102,45 +102,48 @@ Recommendation:
 Assumptions:
 Escalation trigger:`;
 
-    const mcpTool: Record<string, unknown> = {
-      type: "mcp_server",
+    const mcpTool = {
+      type: "mcp_server" as const,
       url: mcpUrl,
       name: "clickhouse-setready",
+      ...(mcpToken
+        ? { headers: { Authorization: `Bearer ${mcpToken}` } }
+        : {}),
     };
-    if (mcpToken) {
-      mcpTool.headers = { Authorization: `Bearer ${mcpToken}` };
-    }
 
+    // Keep stream:true as a literal so @google/genai selects the streaming overload.
     const stream = await ai.interactions.create({
-      agent,
+      agent: agent as any,
       input: prompt,
       environment: { type: "remote" },
-      tools: [mcpTool],
+      tools: [mcpTool as any],
       stream: true,
       background: true,
       store: true,
-    } as never);
+    });
 
     let recommendation = "";
     let interactionId = "";
     let mcpUsed = false;
 
-    for await (const event of stream as AsyncIterable<unknown>) {
+    for await (const event of stream) {
       const evt = event as Record<string, any>;
-      if (evt.event_type === "interaction.created") {
-        interactionId = evt.interaction?.id || interactionId;
+      const serialized = JSON.stringify(evt).toLowerCase();
+
+      if (serialized.includes("mcp") && serialized.includes("clickhouse")) {
+        mcpUsed = true;
       }
-      if (evt.event_type === "step.start") {
-        const stepType = String(evt.step?.type || "").toLowerCase();
-        const stepName = String(evt.step?.name || "").toLowerCase();
-        if (stepType.includes("mcp") || stepName.includes("clickhouse")) mcpUsed = true;
-      }
-      if (evt.event_type === "step.delta" && evt.delta?.type === "text" && evt.delta?.text) {
-        recommendation += String(evt.delta.text);
-      }
-      if (evt.event_type === "interaction.completed") {
-        interactionId = evt.interaction?.id || interactionId;
-      }
+
+      if (evt.interaction?.id) interactionId = String(evt.interaction.id);
+
+      const text =
+        evt.delta?.text ??
+        evt.content?.text ??
+        evt.text ??
+        evt.interaction?.output_text ??
+        "";
+
+      if (typeof text === "string" && text) recommendation += text;
     }
 
     recommendation = recommendation.trim();
