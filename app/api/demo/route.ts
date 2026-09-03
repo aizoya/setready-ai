@@ -139,7 +139,7 @@ async function callGemini(input: z.infer<typeof requestSchema>, clickHouseEviden
   }
 
   try {
-    const audience = `//iam.googleapis.com/projects/${projectNumber}/locations/global/workloadIdentityPools/${poolId}/providers/${providerId}`;
+    const audience = `https://iam.googleapis.com/projects/${projectNumber}/locations/global/workloadIdentityPools/${poolId}/providers/${providerId}`;
     const authClient = ExternalAccountClient.fromJSON({
       type: "external_account",
       audience,
@@ -147,7 +147,7 @@ async function callGemini(input: z.infer<typeof requestSchema>, clickHouseEviden
       token_url: "https://sts.googleapis.com/v1/token",
       service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccountEmail}:generateAccessToken`,
       subject_token_supplier: {
-        getSubjectToken: getVercelOidcToken,
+        getSubjectToken: () => getVercelOidcToken({ audience }),
       },
     });
 
