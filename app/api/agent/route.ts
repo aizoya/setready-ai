@@ -29,9 +29,6 @@ export async function POST(req: NextRequest) {
 
     // 2. MCP Context Retrieval
     addEvidence("CONTEXT_REQUESTED", "Connecting to ClickHouse MCP server");
-    console.log("ROUTE LOG: MCP_CLICKHOUSE_URL =", process.env.MCP_CLICKHOUSE_URL);
-    console.log("ROUTE LOG: MCP_SERVER_AUTH_TOKEN length =", process.env.MCP_SERVER_AUTH_TOKEN ? process.env.MCP_SERVER_AUTH_TOKEN.length : "undefined");
-    console.log("ROUTE LOG: MCP_SERVER_AUTH_TOKEN prefix =", process.env.MCP_SERVER_AUTH_TOKEN ? process.env.MCP_SERVER_AUTH_TOKEN.substring(0, 10) : "undefined");
     const mcpClient = new ClickHouseMCPClient(
       process.env.MCP_CLICKHOUSE_URL || "",
       process.env.MCP_SERVER_AUTH_TOKEN
@@ -40,7 +37,7 @@ export async function POST(req: NextRequest) {
       await mcpClient.connect();
       const hasTool = await mcpClient.verifyRunQueryTool();
       if (!hasTool) throw new Error("run_query tool not found");
-      
+
       addEvidence("CONTEXT_RECEIVED", "Discovered run_query tool");
 
       // Agent-driven SQL generation via Gemini (Simplified for this route)
@@ -59,7 +56,7 @@ export async function POST(req: NextRequest) {
       const response = await sqlResult.response;
       let rawSQL = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim().replace(/```sql|```/g, "") || "";
       rawSQL = rawSQL.trim().replace(/;+$/, "").trim();
-      
+
       addEvidence("AGENT_ANALYSIS", "Generated SQL query", { rawSQL });
 
       // SQL Safety Check
@@ -69,7 +66,7 @@ export async function POST(req: NextRequest) {
       }
 
       const queryResult = await mcpClient.executeQuery(safetyCheck.sanitizedSQL);
-      
+
       // Parse row count from ClickHouse queryResult to check for empty result set
       let rowCount = 0;
       try {
@@ -98,7 +95,7 @@ export async function POST(req: NextRequest) {
       const finalPrompt = `
         Based on the disruption data: ${JSON.stringify(disruption.data)}
         And the production schedule from ClickHouse: ${JSON.stringify(queryResult)}
-        
+
         Provide a recommendation for the production manager.
         The output MUST be a valid JSON object matching this schema:
         {
@@ -112,7 +109,7 @@ export async function POST(req: NextRequest) {
       const recommendationResult = await model.generateContent(finalPrompt);
       const recResponse = await recommendationResult.response;
       const recommendationText = recResponse.candidates?.[0]?.content?.parts?.[0]?.text?.trim().replace(/```json|```/g, "") || "{}";
-      
+
       let recommendation;
       try {
         recommendation = JSON.parse(recommendationText);
