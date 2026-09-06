@@ -12,9 +12,9 @@ export default function SetReadyPage() {
 
   const [formData, setFormData] = useState<Disruption>({
     eventType: "EQUIPMENT_FAILURE",
-    description: "Centrifuge 4 bearing failure detected. Expected downtime 8 hours.",
-    estimatedImpactHours: 8,
-    productionId: "PROD-BATCH99",
+    description: "Camera crane hydraulic failure has stopped the exterior setup and is delaying the next scheduled scene.",
+    estimatedImpactHours: 3,
+    productionId: "PROD-STAGE7",
   });
 
   const handleRunAgent = async () => {
@@ -63,7 +63,7 @@ export default function SetReadyPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">SetReady AI</h1>
         </div>
-        <p className="text-slate-500">Google Cloud Agent Backend | Gemini 3.7 Flash</p>
+        <p className="text-slate-500">Google Cloud Agent Backend | Gemini 2.5 Flash</p>
       </header>
 
       <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
