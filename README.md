@@ -1,53 +1,75 @@
 # SetReady AI
 
-Clean-room implementation of the AI-driven production disruption management system.
+SetReady AI is an AI production-intelligence agent for film and television crews, built for the Agentic Cinema — The Blockbuster Hackathon.
 
 ## Architecture
 
-This project follows the **Google Cloud agent backend** architecture using **Gemini 3.7 Flash** and the **Gemini Enterprise Agent Platform API** terminology.
+The current clean-room build uses a Google Cloud Vertex AI runtime with **Gemini 2.5 Flash**, plus a ClickHouse MCP connection for production context retrieval.
+
+### Golden Path
+
+Production disruption → deterministic input validation → Gemini-generated read-only SQL → SQL safety validation → ClickHouse MCP context retrieval → Gemini recommendation → human approve/reject decision in the UI.
 
 ### Key Components
 
-1.  **Next.js App Router**: Root-level `app/` structure for frontend and API.
-2.  **Gemini 3.7 Flash**: High-speed, low-latency agent reasoning.
-3.  **MCP (Model Context Protocol)**: Official SDK integration for ClickHouse connectivity.
-4.  **SQL Safety Layer**: Defense-in-depth SQL validation (SELECT only, table allowlist, enforced limits).
-5.  **Deterministic State Machine**: Strict transition logic (IDLE -> VALIDATING -> ... -> RECOMMENDATION_READY -> HUMAN_REVIEW -> APPROVED/REJECTED).
-6.  **Zod Validation**: Strict schema enforcement for inputs and agent recommendations.
+1. **Next.js App Router** — frontend and API route.
+2. **Gemini 2.5 Flash** — runtime reasoning through `@google-cloud/vertexai`.
+3. **MCP (Model Context Protocol)** — official SDK integration for ClickHouse connectivity.
+4. **SQL Safety Layer** — SELECT-only validation, table allowlist, forbidden-keyword checks, and enforced query limits.
+5. **Deterministic State Machine Module** — explicit allowed transitions for the SetReady workflow, with unit coverage.
+6. **Zod Validation** — strict input and recommendation schemas.
+7. **Human Review UI** — recommendations are presented for explicit approval or rejection; approval does not trigger an external production action.
 
 ### Tech Stack
 
--   **Frontend**: React 19, Tailwind CSS, Lucide Icons.
--   **Backend**: Next.js 15 API Routes.
--   **AI**: Gemini 3.7 Flash via `@google/generative-ai`.
--   **Database Access**: MCP SDK via `@modelcontextprotocol/sdk`.
--   **Testing**: Jest, ts-jest, React Testing Library.
+- **Frontend**: React 19, Next.js 15, Lucide Icons.
+- **Backend**: Next.js 15 API routes.
+- **AI**: Gemini 2.5 Flash via `@google-cloud/vertexai`.
+- **Database Access**: MCP SDK via `@modelcontextprotocol/sdk`.
+- **Testing**: Jest, ts-jest, React Testing Library.
 
 ## Safety & Security
 
--   **Fail-Closed**: Any validation failure or unexpected error transitions the agent to a `STOPPED` state and halts processing.
--   **SQL Defense**: 
-    -   Only `SELECT` statements are allowed.
-    -   Approved table allowlist: `production_schedule`.
-    -   Mandatory `LIMIT` enforcement.
-    -   No DML/DDL/SYSTEM statements.
--   **Human-in-the-Loop**: No action can be taken without explicit `HUMAN_REVIEW` and approval.
+- **Input validation**: disruption payloads are validated before external calls.
+- **SQL defense**:
+  - only `SELECT` statements are allowed;
+  - approved tables are `production_schedule` and `setready_events`;
+  - semicolons and DML/DDL/SYSTEM-style keywords are rejected;
+  - query results are capped with `LIMIT 100`.
+- **Read-only expectation**: the ClickHouse identity used by the MCP server must also be configured read-only at the database layer.
+- **Human control**: the current demo presents a recommendation for approval/rejection and does not automatically execute a production action.
+- **Secret handling**: environment variable names may be documented; credential values must never be committed or logged.
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and fill in:
+Copy `.env.example` to `.env.local` for local development and configure values through your local/deployment secret mechanism:
 
--   `GOOGLE_GENERATIVE_AI_API_KEY`: Gemini API key.
--   `CLICKHOUSE_MCP_SERVER_URL`: URL of the ClickHouse MCP server.
+- `GOOGLE_CLOUD_PROJECT`: Google Cloud project ID.
+- `GOOGLE_CLOUD_LOCATION`: Vertex AI location. The app maps `global`/unset to `us-central1` for the current SDK path.
+- `MCP_CLICKHOUSE_URL`: base URL for the ClickHouse MCP server.
+- `MCP_SERVER_AUTH_TOKEN`: bearer token for the MCP server when authentication is enabled.
+
+Google Cloud authentication for `@google-cloud/vertexai` should be provided through Application Default Credentials or the deployment platform's supported Google Cloud identity mechanism. Do not place service-account keys in the repository.
 
 ## Getting Started
 
-1.  `npm install`
-2.  `npm run dev`
-3.  `npm test`
+1. `npm install`
+2. Configure the environment variables above.
+3. `npm run dev`
+4. `npm test`
+5. `npm run build`
 
 ## Project Structure
 
--   `app/api/agent/route.ts`: Core agent logic.
--   `lib/`: Core utilities and safety layers.
--   `__tests__/`: Automated test suite.
+- `app/api/agent/route.ts` — core request, Gemini, SQL-safety, and ClickHouse MCP flow.
+- `app/page.tsx` — film/TV disruption demo and human review interface.
+- `lib/mcp-client.ts` — MCP transport/client wrapper.
+- `lib/sql-safety.ts` — deterministic SQL guardrail.
+- `lib/state-machine.ts` — workflow transition policy.
+- `lib/types.ts` — Zod schemas and shared types.
+- `__tests__/` — automated unit tests.
+- `docs/DEMO-SCOPE.md` — hackathon scope and success criteria.
+
+## Submission Integrity
+
+Runtime integrations are considered complete only after they are verified in the hosted application. The public repository intentionally documents the implemented behavior rather than claiming unverified integrations.
