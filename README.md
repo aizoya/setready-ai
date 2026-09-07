@@ -73,3 +73,39 @@ Google Cloud authentication for `@google-cloud/vertexai` should be provided thro
 ## Submission Integrity
 
 Runtime integrations are considered complete only after they are verified in the hosted application. The public repository intentionally documents the implemented behavior rather than claiming unverified integrations.
+
+## 🛡️ Partner Track: Official ClickHouse MCP Runtime Verification
+
+This project actively invokes the official `mcp-clickhouse` server over JSON-RPC 2.0 (`stdio`) at runtime for analytical queries and log breakdown.
+
+| Timestamp (UTC) | JSON-RPC Event | MCP Server | Tool Invoked | Latency | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `2026-09-07T18:33:21Z` | `JSON-RPC:initialize` | `official/mcp-clickhouse` | `system` | 2001.74 ms | **SUCCESS** |
+| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/list` | `official/mcp-clickhouse` | `system` | 246.03 ms | **SUCCESS** |
+| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/call` | `official/mcp-clickhouse` | `run_query` | 772.69 ms | **SUCCESS** |
+
+*Raw trace available in [`clickhouse_mcp_runtime_proof.json`](./clickhouse_mcp_runtime_proof.json).*
+
+## 🛡️ Partner Track: Official ClickHouse MCP Runtime Verification
+
+This project actively invokes the official `mcp-clickhouse` server over JSON-RPC 2.0 (`stdio`) at runtime for analytical queries and log breakdown.
+
+| Timestamp (UTC) | JSON-RPC Event | MCP Server | Tool Invoked | Latency | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `2026-09-07T18:33:21Z` | `JSON-RPC:initialize` | `official/mcp-clickhouse` | `system` | 2001.74 ms | **SUCCESS** |
+| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/list` | `official/mcp-clickhouse` | `system` | 246.03 ms | **SUCCESS** |
+| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/call` | `official/mcp-clickhouse` | `run_query` | 772.69 ms | **SUCCESS** |
+
+*Raw trace available in [`clickhouse_mcp_runtime_proof.json`](./clickhouse_mcp_runtime_proof.json).*
+
+## 🛡️ Partner Track: Official ClickHouse MCP Runtime Verification
+
+This project actively invokes the official `mcp-clickhouse` server over JSON-RPC 2.0 (`stdio`) at runtime for analytical queries and log breakdown.
+
+| Timestamp (UTC) | JSON-RPC Event | MCP Server | Tool Invoked | Latency | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `2026-09-07T18:33:21Z` | `JSON-RPC:initialize` | `official/mcp-clickhouse` | `system` | 2001.74 ms | **SUCCESS** |
+| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/list` | `official/mcp-clickhouse` | `system` | 246.03 ms | **SUCCESS** |
+| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/call` | `official/mcp-clickhouse` | `run_query` | 772.69 ms | **SUCCESS** |
+
+*Raw trace available in [`clickhouse_mcp_runtime_proof.json`](./clickhouse_mcp_runtime_proof.json).*
