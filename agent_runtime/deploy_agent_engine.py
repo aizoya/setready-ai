@@ -21,7 +21,8 @@ vertexai.init(
     staging_bucket=STAGING_BUCKET,
 )
 
-remote_agent = agent_engines.create(
+remote_agent = agent_engines.update(
+    resource_name=os.environ["SETREADY_AGENT_ENGINE_RESOURCE_NAME"],
     agent_engine=app,
     requirements="agent_runtime/requirements-agent-engine.txt",
     extra_packages=["agent_runtime"],
@@ -41,5 +42,5 @@ remote_agent = agent_engines.create(
     max_instances=1,
 )
 
-print("=== AGENT ENGINE CREATED ===")
+print("=== AGENT ENGINE UPDATED ===")
 print(remote_agent.resource_name)
