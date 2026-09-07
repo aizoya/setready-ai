@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - feat/cleanroom-final-20260906
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --runInBand
+
+      - name: Build
+        env:
+          GOOGLE_CLOUD_PROJECT: setready-ai-hackathon
+          GOOGLE_CLOUD_LOCATION: us-central1
+          MCP_CLICKHOUSE_URL: http://localhost:8080
+        run: npm run build
