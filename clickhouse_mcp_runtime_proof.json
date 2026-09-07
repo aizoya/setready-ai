@@ -1,26 +1,26 @@
 [
   {
-    "timestamp_utc": "2026-09-07T18:33:21.974393+00:00",
+    "timestamp_utc": "2026-09-07T21:27:33.878473+00:00",
     "event_type": "JSON-RPC:initialize",
     "mcp_server": "official/mcp-clickhouse",
     "tool_invoked": "system",
-    "latency_ms": 2001.74,
+    "latency_ms": 2294.03,
     "runtime_status": "SUCCESS"
   },
   {
-    "timestamp_utc": "2026-09-07T18:33:22.220474+00:00",
+    "timestamp_utc": "2026-09-07T21:27:34.144829+00:00",
     "event_type": "JSON-RPC:tools/list",
     "mcp_server": "official/mcp-clickhouse",
     "tool_invoked": "system",
-    "latency_ms": 246.03,
+    "latency_ms": 266.29,
     "runtime_status": "SUCCESS"
   },
   {
-    "timestamp_utc": "2026-09-07T18:33:22.993240+00:00",
+    "timestamp_utc": "2026-09-07T21:27:35.175674+00:00",
     "event_type": "JSON-RPC:tools/call",
     "mcp_server": "official/mcp-clickhouse",
     "tool_invoked": "run_query",
-    "latency_ms": 772.69,
+    "latency_ms": 1030.71,
     "runtime_status": "SUCCESS"
   }
 ]
