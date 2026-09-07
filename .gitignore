@@ -145,3 +145,5 @@ vite.config.ts.timestamp-*
 # Python runtime artifacts
 __pycache__/
 *.py[cod]
+.vercel
+.env*
