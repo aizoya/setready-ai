@@ -1,111 +1,108 @@
 # SetReady AI
 
-SetReady AI is an AI production-intelligence agent for film and television crews, built for the Agentic Cinema — The Blockbuster Hackathon.
+SetReady AI is an AI production-intelligence agent for film and television crews, built for Agentic Cinema: The Blockbuster Hackathon.
+
+## What it does
+
+A production disruption is reported, SetReady validates the structured input, queries live evidence from ClickHouse through the official ClickHouse MCP server, asks Gemini for a bounded operational recommendation, and keeps consequential schedule changes behind explicit 1st AD / UPM human review.
+
+## Judge-facing hosted demo
+
+https://setready-ai.vercel.app
+
+The current web golden path uses the Next.js `/api/demo` route. A successful request shows request-level provider proof for both ClickHouse and Gemini and returns the recommendation without simulating provider success.
 
 ## Architecture
 
-The current clean-room build uses a Google Cloud Vertex AI runtime with **Gemini 2.5 Flash**, plus a ClickHouse MCP connection for production context retrieval.
+```text
+SetReady UI (Vercel)
+        |
+        v
+Next.js /api/demo
+  | deterministic Zod validation
+  |
+  +--> Official ClickHouse MCP server on Google Cloud Run
+  |      `--> ClickHouse Cloud read-only runtime query
+  |
+  `--> Vercel OIDC
+         `--> Google Workload Identity Federation
+                `--> dedicated Google Cloud service account
+                       `--> Vertex AI / Gemini 2.5 Flash
 
-### Golden Path
+Result: recommendation + provider status + runtime evidence + human approval boundary
+```
 
-Production disruption → deterministic input validation → Gemini-generated read-only SQL → SQL safety validation → ClickHouse MCP context retrieval → Gemini recommendation → human approve/reject decision in the UI.
+A separate Google ADK runtime is also included under `agent_runtime/`. It defines the SetReady agent with Gemini 2.5 Flash, exposes only ClickHouse `run_query` through `McpToolset`, and contains the managed Vertex AI Agent Engine deployment/update scaffold. The judge-facing web request path remains the `/api/demo` architecture shown above; this README does not claim that the browser request is routed through Agent Engine.
 
-### Key Components
+## Key components
 
-1. **Next.js App Router** — frontend and API route.
-2. **Gemini 2.5 Flash** — runtime reasoning through `@google-cloud/vertexai`.
-3. **MCP (Model Context Protocol)** — official SDK integration for ClickHouse connectivity.
-4. **SQL Safety Layer** — SELECT-only validation, table allowlist, forbidden-keyword checks, and enforced query limits.
-5. **Deterministic State Machine Module** — explicit allowed transitions for the SetReady workflow, with unit coverage.
-6. **Zod Validation** — strict input and recommendation schemas.
-7. **Human Review UI** — recommendations are presented for explicit approval or rejection; approval does not trigger an external production action.
+1. **Next.js 15 / React 19** — hosted web application and API routes.
+2. **Gemini 2.5 Flash on Vertex AI** — runtime reasoning and recommendation generation.
+3. **Google Cloud authentication** — Vercel OIDC → Google Workload Identity Federation → short-lived service-account access.
+4. **Official ClickHouse MCP** — live runtime access to ClickHouse through `mcp-clickhouse` on Google Cloud Run.
+5. **SQL safety controls** — SELECT-only validation, approved-table allowlist, forbidden-keyword checks, and query limits in the agent route.
+6. **Deterministic validation and state controls** — Zod schemas and explicit workflow boundaries.
+7. **Human review** — recommendations are advisory; consequential production schedule changes are not automatically executed.
+8. **Google ADK / Vertex AI Agent Engine scaffold** — managed-agent implementation under `agent_runtime/`.
 
-### Tech Stack
+## ClickHouse partner-track runtime proof
 
-- **Frontend**: React 19, Next.js 15, Lucide Icons.
-- **Backend**: Next.js 15 API routes.
-- **AI**: Gemini 2.5 Flash via `@google-cloud/vertexai`.
-- **Database Access**: MCP SDK via `@modelcontextprotocol/sdk`.
-- **Testing**: Jest, ts-jest, React Testing Library.
+The submitted implementation actively uses ClickHouse at runtime through the official ClickHouse MCP server. The web golden path performs an authenticated MCP initialization and `tools/call` for `run_query` using a read-only `SELECT` query.
 
-## Safety & Security
+A captured verification trace is available in [`clickhouse_mcp_runtime_proof.json`](./clickhouse_mcp_runtime_proof.json).
 
-- **Input validation**: disruption payloads are validated before external calls.
-- **SQL defense**:
-  - only `SELECT` statements are allowed;
-  - approved tables are `production_schedule` and `setready_events`;
-  - semicolons and DML/DDL/SYSTEM-style keywords are rejected;
-  - query results are capped with `LIMIT 100`.
-- **Read-only expectation**: the ClickHouse identity used by the MCP server must also be configured read-only at the database layer.
-- **Human control**: the current demo presents a recommendation for approval/rejection and does not automatically execute a production action.
-- **Secret handling**: environment variable names may be documented; credential values must never be committed or logged.
+| Timestamp (UTC) | MCP event | Tool | Status |
+| --- | --- | --- | --- |
+| `2026-09-07T18:33:21Z` | `initialize` | system | SUCCESS |
+| `2026-09-07T18:33:22Z` | `tools/list` | system | SUCCESS |
+| `2026-09-07T18:33:22Z` | `tools/call` | `run_query` | SUCCESS |
 
-## Environment Variables
+## Safety and security
 
-Copy `.env.example` to `.env.local` for local development and configure values through your local/deployment secret mechanism:
+- Disruption inputs are validated before provider calls.
+- Runtime ClickHouse queries used in the judge-facing demo are read-only.
+- The separate agent route includes deterministic SELECT-only SQL validation and limits.
+- Provider badges show `verified-live` only when that provider succeeds in the current request.
+- Failures are surfaced instead of silently mocked.
+- Human production leadership retains authority over consequential schedule changes.
+- Credential values must remain in deployment secret/configuration systems and must never be committed or logged.
 
-- `GOOGLE_CLOUD_PROJECT`: Google Cloud project ID.
-- `GOOGLE_CLOUD_LOCATION`: Vertex AI location. The app maps `global`/unset to `us-central1` for the current SDK path.
-- `MCP_CLICKHOUSE_URL`: base URL for the ClickHouse MCP server.
-- `MCP_SERVER_AUTH_TOKEN`: bearer token for the MCP server when authentication is enabled.
+## Environment variables
 
-Google Cloud authentication for `@google-cloud/vertexai` should be provided through Application Default Credentials or the deployment platform's supported Google Cloud identity mechanism. Do not place service-account keys in the repository.
+See `.env.example` for names only. The hosted runtime uses deployment-managed configuration and keyless Google Cloud identity; do not commit credential values or service-account keys.
 
-## Getting Started
+## Run locally
 
-1. `npm install`
-2. Configure the environment variables above.
-3. `npm run dev`
-4. `npm test`
-5. `npm run build`
+```bash
+npm ci
+npm test -- --runInBand
+npm run build
+npm run dev
+```
 
-## Project Structure
+Local provider calls require the deployment-specific Google Cloud and ClickHouse configuration documented in `.env.example`.
 
-- `app/api/agent/route.ts` — core request, Gemini, SQL-safety, and ClickHouse MCP flow.
-- `app/page.tsx` — film/TV disruption demo and human review interface.
-- `lib/mcp-client.ts` — MCP transport/client wrapper.
+## Project structure
+
+- `app/page.tsx` — SetReady landing page.
+- `app/demo-client.tsx` — judge-facing disruption workflow.
+- `app/api/demo/route.ts` — hosted ClickHouse MCP + Gemini runtime path.
+- `app/api/agent/route.ts` — guarded agent/SQL workflow implementation.
+- `agent_runtime/agent.py` — Google ADK SetReady agent with ClickHouse MCP toolset.
+- `agent_runtime/deploy_agent_engine.py` — Vertex AI Agent Engine deployment/update scaffold.
+- `lib/mcp-client.ts` — MCP client wrapper.
 - `lib/sql-safety.ts` — deterministic SQL guardrail.
 - `lib/state-machine.ts` — workflow transition policy.
 - `lib/types.ts` — Zod schemas and shared types.
-- `__tests__/` — automated unit tests.
-- `docs/DEMO-SCOPE.md` — hackathon scope and success criteria.
+- `__tests__/` — automated tests.
+- `docs/DEMO-SCOPE.md` — frozen hackathon scope.
+- `docs/DEMO-SCRIPT.md` — final demo-video runbook.
+- `docs/DEVPOST-DRAFT.md` — submission answer bank.
 
-## Submission Integrity
+## Submission integrity
 
-Runtime integrations are considered complete only after they are verified in the hosted application. The public repository intentionally documents the implemented behavior rather than claiming unverified integrations.
+The repository is public and the scope is frozen for submission. Runtime integrations should be described only to the extent supported by code and captured verification evidence.
 
-## 🛡️ Partner Track: Official ClickHouse MCP Runtime Verification
+## License status
 
-This project actively invokes the official `mcp-clickhouse` server over JSON-RPC 2.0 (`stdio`) at runtime for analytical queries and log breakdown.
-
-| Timestamp (UTC) | JSON-RPC Event | MCP Server | Tool Invoked | Latency | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `2026-09-07T18:33:21Z` | `JSON-RPC:initialize` | `official/mcp-clickhouse` | `system` | 2001.74 ms | **SUCCESS** |
-| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/list` | `official/mcp-clickhouse` | `system` | 246.03 ms | **SUCCESS** |
-| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/call` | `official/mcp-clickhouse` | `run_query` | 772.69 ms | **SUCCESS** |
-
-*Raw trace available in [`clickhouse_mcp_runtime_proof.json`](./clickhouse_mcp_runtime_proof.json).*
-
-## 🛡️ Partner Track: Official ClickHouse MCP Runtime Verification
-
-This project actively invokes the official `mcp-clickhouse` server over JSON-RPC 2.0 (`stdio`) at runtime for analytical queries and log breakdown.
-
-| Timestamp (UTC) | JSON-RPC Event | MCP Server | Tool Invoked | Latency | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `2026-09-07T18:33:21Z` | `JSON-RPC:initialize` | `official/mcp-clickhouse` | `system` | 2001.74 ms | **SUCCESS** |
-| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/list` | `official/mcp-clickhouse` | `system` | 246.03 ms | **SUCCESS** |
-| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/call` | `official/mcp-clickhouse` | `run_query` | 772.69 ms | **SUCCESS** |
-
-*Raw trace available in [`clickhouse_mcp_runtime_proof.json`](./clickhouse_mcp_runtime_proof.json).*
-
-## 🛡️ Partner Track: Official ClickHouse MCP Runtime Verification
-
-This project actively invokes the official `mcp-clickhouse` server over JSON-RPC 2.0 (`stdio`) at runtime for analytical queries and log breakdown.
-
-| Timestamp (UTC) | JSON-RPC Event | MCP Server | Tool Invoked | Latency | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `2026-09-07T18:33:21Z` | `JSON-RPC:initialize` | `official/mcp-clickhouse` | `system` | 2001.74 ms | **SUCCESS** |
-| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/list` | `official/mcp-clickhouse` | `system` | 246.03 ms | **SUCCESS** |
-| `2026-09-07T18:33:22Z` | `JSON-RPC:tools/call` | `official/mcp-clickhouse` | `run_query` | 772.69 ms | **SUCCESS** |
-
-*Raw trace available in [`clickhouse_mcp_runtime_proof.json`](./clickhouse_mcp_runtime_proof.json).*
+A root `LICENSE` file is present. Before final Devpost submission, the repository owner must ensure that the file contains the intended complete OSI-approved license with no unresolved template placeholders and that Devpost/GitHub can detect it correctly. Do not rely on older documentation that labeled the current file Apache-2.0 without checking its contents.
