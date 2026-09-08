@@ -9,6 +9,7 @@ Status: submitted before the September 9, 2026 deadline. Protect the submitted p
 - Public repository: https://github.com/aizoya/setready-ai
 - Submitted/public video: https://vimeo.com/1224759375
 - Partner track: ClickHouse
+- License: MIT
 - Judge-facing browser runtime: Next.js `/api/demo`
 - Gemini model in current code: `gemini-2.5-flash`
 - ClickHouse integration: official `mcp-clickhouse` runtime over MCP with read-only `run_query`
@@ -17,21 +18,19 @@ Status: submitted before the September 9, 2026 deadline. Protect the submitted p
 
 ## Required post-submission corrections before the deadline
 
-### 1. License — owner/legal gate
+### 1. Gemini model wording — factual metadata correction
 
-The repository root `LICENSE` is currently an MIT-style template with unresolved `{{ year }}` and `{{ organization }}` placeholders. Previous documentation called the project Apache-2.0, while the current Vimeo description says MIT Open Source.
-
-Do not claim either license until the repository owner confirms the intended OSI-approved license and installs a complete license file. After that decision, all public metadata should use the same license name.
-
-### 2. Gemini model wording — factual metadata correction
-
-The current repository and judge-facing runtime use Gemini 2.5 Flash. The public Vimeo description currently says Gemini 3.7 / Gemini 3.7 Flash. Correct public metadata and any editable Devpost fields to Gemini 2.5 Flash unless there is separate evidence that the submitted video itself demonstrates another model.
+The current repository and judge-facing runtime use Gemini 2.5 Flash. The public Vimeo description currently says Gemini 3.7 / Gemini 3.7 Flash. Correct public metadata and any editable Devpost fields to Gemini 2.5 Flash.
 
 Do not re-record the video solely because of metadata wording. First inspect whether the incorrect model number is only in the Vimeo description / Devpost text or is actually visible/spoken in the submitted video.
 
-### 3. Agent Engine wording — preserve claim boundary
+### 2. Agent Engine wording — preserve claim boundary
 
 The repository contains a separate Google ADK / Vertex AI Agent Engine implementation. The judge-facing browser golden path directly demonstrates Gemini + ClickHouse MCP through the hosted Next.js runtime. Do not claim that the browser request itself traverses Agent Engine unless that exact path is demonstrated.
+
+### 3. License wording
+
+SetReady AI uses the MIT License. Public submission metadata should use **MIT** consistently and should not call the repository Apache-2.0.
 
 ## Final copy-paste answer bank
 
@@ -88,6 +87,9 @@ After the hackathon, expand historical production telemetry and disruption patte
 ### Built With
 Next.js, React, TypeScript, Gemini 2.5 Flash, Vertex AI, Google Cloud Run, Google Workload Identity Federation, Google ADK, Vertex AI Agent Engine, ClickHouse Cloud, official ClickHouse MCP (`mcp-clickhouse`), Model Context Protocol, Zod, Jest, Vercel.
 
+### License
+MIT
+
 ## Links
 
 - Hosted project: https://setready-ai.vercel.app
@@ -97,10 +99,11 @@ Next.js, React, TypeScript, Gemini 2.5 Flash, Vertex AI, Google Cloud Run, Googl
 
 ## Human-only gates
 
-1. Confirm the intended OSI-approved license and authorize the license correction.
-2. Edit Vimeo/Devpost metadata from Gemini 3.7 to Gemini 2.5 Flash where the incorrect claim appears.
+1. Review and merge PR #7 after checks pass.
+2. Edit Vimeo/Devpost metadata from Gemini 3.7 to Gemini 2.5 Flash wherever the incorrect claim appears.
 3. Verify whether the incorrect model number is visible/spoken inside the submitted video; only consider replacing the video if the error is actually in the video and a clean correction is necessary.
-4. Review and save the edited Devpost submission before September 9, 2026 at 2:00 PM Pacific.
+4. Ensure any license field/description says MIT, not Apache-2.0.
+5. Save the edited Devpost submission before September 9, 2026 at 2:00 PM Pacific.
 
 ## Do not do before the deadline
 
