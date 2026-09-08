@@ -96,13 +96,13 @@ Local provider calls require the deployment-specific Google Cloud and ClickHouse
 - `lib/types.ts` — Zod schemas and shared types.
 - `__tests__/` — automated tests.
 - `docs/DEMO-SCOPE.md` — frozen hackathon scope.
-- `docs/DEMO-SCRIPT.md` — final demo-video runbook.
-- `docs/DEVPOST-DRAFT.md` — submission answer bank.
+- `docs/DEMO-SCRIPT.md` — submitted demo-video runbook.
+- `docs/DEVPOST-DRAFT.md` — post-submission reconciliation and answer bank.
 
 ## Submission integrity
 
 The repository is public and the scope is frozen for submission. Runtime integrations should be described only to the extent supported by code and captured verification evidence.
 
-## License status
+## License
 
-A root `LICENSE` file is present. Before final Devpost submission, the repository owner must ensure that the file contains the intended complete OSI-approved license with no unresolved template placeholders and that Devpost/GitHub can detect it correctly. Do not rely on older documentation that labeled the current file Apache-2.0 without checking its contents.
+SetReady AI is released under the **MIT License**. See [`LICENSE`](./LICENSE).
