@@ -1,125 +1,114 @@
-# SetReady AI — Devpost Submission Draft
+# SetReady AI — Post-Submission Reconciliation
 
-> Working draft. Replace bracketed placeholders before final submission. Do not claim a provider or competition requirement unless it is verified in the final deployed build.
+Status: submitted before the September 9, 2026 deadline. Protect the submitted product baseline. Only correct compliance or factual metadata before the deadline; do not reopen product scope.
 
-## Project name
-SetReady AI
+## Canonical implementation facts
 
-## Tagline
-Production intelligence for film and television crews: turn schedule disruptions into evidence-backed, bounded operational recommendations.
-
-## Inspiration
-Film and television sets operate under hard constraints: cast availability, crew time, company moves, daylight, location windows, setup dependencies, and budget pressure. When a scene falls behind, the problem is not simply “what should we do?” The real problem is how to reason quickly from incomplete operational context, preserve human authority, and leave an evidence trail that production leadership can inspect.
-
-SetReady AI explores an agentic operating model for that moment.
-
-## What it does
-SetReady AI accepts a structured production disruption — for example, a scene running 35 minutes behind — validates the input deterministically, queries live runtime evidence through ClickHouse MCP, and asks Gemini for a bounded recommendation designed for a 1st AD / UPM workflow.
-
-The recommendation focuses on:
-1. immediate operational action,
-2. schedule/economic risk,
-3. an explicit approval gate.
-
-SetReady does not autonomously alter a call sheet or production schedule. Human production leadership remains the authority for consequential changes.
-
-## How we built it
-### Application
-- Next.js + TypeScript hosted on Vercel
-- deterministic input validation and provider-state reporting
-- mobile-first golden-path UI
-
-### Gemini + Google Cloud
-- Gemini called through the Vertex AI API
-- Vercel OIDC exchanged through Google Workload Identity Federation
-- short-lived access through a dedicated SetReady Runtime service account
-- no long-lived Google service-account key committed to the application
-
-### ClickHouse partner-track integration
-- official ClickHouse MCP server deployed on Google Cloud Run
-- authenticated MCP session initialized at runtime
-- live read-only ClickHouse query executed during the demo request
-- response included as runtime evidence before Gemini produces the recommendation
-
-### Reliability / control model
-- provider badges report `verified-live` only after that provider succeeds during the current request
-- failures are surfaced rather than silently mocked
-- input bounds are deterministic
-- ClickHouse demo query is read-only
-- schedule changes remain behind a human approval boundary
-
-## Runtime architecture
-```text
-SetReady UI (Vercel)
-        |
-        v
-Next.js /api/demo
-  | deterministic validation
-  |
-  +--> ClickHouse MCP / Google Cloud Run
-  |      `--> live ClickHouse query
-  |
-  `--> Vercel OIDC
-         `--> Google Workload Identity Federation
-                `--> SetReady Runtime service account
-                       `--> Vertex AI / Gemini
-
-Result: recommendation + live provider badges + runtime evidence
-```
-
-## What we verified
-In the deployed golden-path demo, a single request has produced:
-- `ClickHouse verified-live`
-- `Gemini verified-live`
-- live ClickHouse runtime evidence
-- a Gemini-generated operational recommendation
-- visible deterministic control boundaries
-
-## Challenges we ran into
-The most difficult work was production-grade identity and runtime wiring rather than the UI. We had to solve:
-- Cloud Run transport/startup behavior for the MCP server,
-- Secret Manager access and credential synchronization,
-- authenticated MCP session handling,
-- Vercel environment scoping,
-- Vercel OIDC → Google Workload Identity Federation audience alignment,
-- preview/production attribute conditions,
-- service-account impersonation permissions.
-
-We kept those failures explicit in the product during development instead of displaying fake “connected” states.
-
-## Accomplishments we are proud of
-- Real ClickHouse MCP integration rather than a mocked partner badge.
-- Keyless Vercel-to-Google Cloud authentication using OIDC/WIF.
-- Request-level provider proof visible in the product.
-- A narrow, production-operations workflow instead of an over-broad film-management prototype.
-- Explicit human authority for consequential schedule changes.
-
-## What we learned
-Agentic production software needs a separation between reasoning and authority. Models are useful for synthesizing operational context and proposing responses; deterministic application logic and accountable humans should control permissions, state transitions, and consequential actions.
-
-We also learned that runtime proof matters. A judge or production user should be able to distinguish a live provider integration from a visual placeholder.
-
-## What's next
-- Add richer historical production telemetry and disruption patterns in ClickHouse.
-- Add approved production state transitions and auditable event writes.
-- Expand the 1st AD / UPM workflow to company moves, hard outs, setup dependencies, and recovery scenarios.
-- Add controlled integrations with production scheduling and communication systems.
-- Validate with working film/TV production professionals before broadening scope.
-
-## Links
+- Project: SetReady AI
 - Hosted app: https://setready-ai.vercel.app
 - Public repository: https://github.com/aizoya/setready-ai
-- Demo video: [ADD FINAL VIDEO URL]
+- Submitted/public video: https://vimeo.com/1224759375
+- Partner track: ClickHouse
+- License: MIT
+- Judge-facing browser runtime: Next.js `/api/demo`
+- Gemini model in current code: `gemini-2.5-flash`
+- ClickHouse integration: official `mcp-clickhouse` runtime over MCP with read-only `run_query`
+- Google Cloud: Vertex AI, Cloud Run, Workload Identity Federation / short-lived identity
+- Separate managed-agent implementation: Google ADK + Vertex AI Agent Engine under `agent_runtime/`
 
-## License
-Apache License 2.0.
+## Required post-submission corrections before the deadline
 
-## Final submission QA — must complete before submit
-- [ ] PR #3 merged to `main`
-- [ ] production deployment rerun shows both providers `verified-live`
-- [ ] public repo displays Apache-2.0 license
-- [ ] README reflects final architecture
-- [ ] no secrets in repository/history/screenshots/video
-- [ ] 3-minute video uploaded and URL inserted
-- [ ] verify final competition wording for Google Cloud Agent Builder / required Google services and document only what is actually used
-- [ ] verify Devpost fields, partner track selection, and submission deadline
+### 1. Gemini model wording — factual metadata correction
+
+The current repository and judge-facing runtime use Gemini 2.5 Flash. The public Vimeo description currently says Gemini 3.7 / Gemini 3.7 Flash. Correct public metadata and any editable Devpost fields to Gemini 2.5 Flash.
+
+Do not re-record the video solely because of metadata wording. First inspect whether the incorrect model number is only in the Vimeo description / Devpost text or is actually visible/spoken in the submitted video.
+
+### 2. Agent Engine wording — preserve claim boundary
+
+The repository contains a separate Google ADK / Vertex AI Agent Engine implementation. The judge-facing browser golden path directly demonstrates Gemini + ClickHouse MCP through the hosted Next.js runtime. Do not claim that the browser request itself traverses Agent Engine unless that exact path is demonstrated.
+
+### 3. License wording
+
+SetReady AI uses the MIT License. Public submission metadata should use **MIT** consistently and should not call the repository Apache-2.0.
+
+## Final copy-paste answer bank
+
+### Project name
+SetReady AI
+
+### Tagline
+Production intelligence for film and television crews: turn schedule disruptions into evidence-backed, bounded operational recommendations.
+
+### Inspiration
+Film and television sets operate under hard constraints: cast availability, crew time, company moves, daylight, location windows, setup dependencies, and budget pressure. When a scene falls behind, the challenge is reasoning quickly from incomplete operational context while preserving human authority and leaving evidence production leadership can inspect.
+
+### What it does
+SetReady AI accepts a structured production disruption, validates the input deterministically, queries live runtime evidence through the official ClickHouse MCP server, and asks Gemini for a bounded recommendation designed for a 1st AD / UPM workflow. The recommendation focuses on immediate operational action, schedule/economic risk, and an explicit approval gate. SetReady does not autonomously alter a call sheet or production schedule.
+
+### How we built it
+The judge-facing web application is built with Next.js and TypeScript and hosted on Vercel. The `/api/demo` runtime validates the disruption with Zod, initializes an authenticated session with the official ClickHouse MCP server running on Google Cloud Run, executes a live read-only ClickHouse query, obtains short-lived Google Cloud access using Vercel OIDC and Google Workload Identity Federation, and calls Gemini 2.5 Flash through Vertex AI. It returns a bounded recommendation with request-level provider status and runtime evidence.
+
+The repository also includes a separate Google ADK agent runtime under `agent_runtime/`, with Gemini 2.5 Flash, ClickHouse `run_query` exposed through `McpToolset`, and Vertex AI Agent Engine deployment/update code.
+
+### Google Cloud technologies used
+- Vertex AI / Gemini 2.5 Flash
+- Google Cloud Run
+- Google Workload Identity Federation
+- Google IAM short-lived service-account access
+- Google ADK
+- Vertex AI Agent Engine
+
+### Gemini usage
+Gemini 2.5 Flash generates the bounded operational recommendation in the hosted workflow using the reported production disruption and live ClickHouse MCP evidence.
+
+### ClickHouse usage
+SetReady actively uses ClickHouse at runtime through the official `mcp-clickhouse` server. The hosted demo initializes an authenticated MCP session and invokes `run_query` with a read-only SELECT statement. Captured runtime proof is included in the public repository.
+
+### Agent Engine / Agent Builder usage
+The repository contains a Google ADK SetReady agent and Vertex AI Agent Engine deployment/update implementation. The ADK agent uses Gemini 2.5 Flash and exposes the official ClickHouse MCP `run_query` tool through `McpToolset`. The judge-facing browser workflow demonstrates Gemini + ClickHouse MCP directly through the hosted Next.js runtime; do not describe that browser request as traversing Agent Engine unless separately demonstrated.
+
+### Challenges
+The hardest work was production-grade identity and runtime integration rather than the interface: Cloud Run MCP transport/startup behavior, authenticated MCP sessions, Vercel environment scoping, Vercel OIDC to Google Workload Identity Federation audience alignment, service-account impersonation, and managed-agent runtime constraints.
+
+### Accomplishments
+- Real runtime use of the official ClickHouse MCP server rather than a mocked badge.
+- Keyless Vercel-to-Google Cloud authentication through OIDC and Workload Identity Federation.
+- Request-level provider proof visible in the product.
+- Explicit human authority for consequential schedule changes.
+- Separate Google ADK / Vertex AI Agent Engine implementation with a constrained ClickHouse MCP tool boundary.
+
+### What we learned
+Agentic production software benefits from separating reasoning from authority. Models can synthesize operational context and propose responses, while deterministic application logic and accountable humans should control validation, permissions, state transitions, and consequential actions. Runtime proof also matters: judges and users should be able to distinguish live integrations from visual placeholders.
+
+### What's next
+After the hackathon, expand historical production telemetry and disruption patterns in ClickHouse, add auditable approved state transitions, broaden the 1st AD / UPM workflow, and validate with working film and television production professionals before expanding integrations.
+
+### Built With
+Next.js, React, TypeScript, Gemini 2.5 Flash, Vertex AI, Google Cloud Run, Google Workload Identity Federation, Google ADK, Vertex AI Agent Engine, ClickHouse Cloud, official ClickHouse MCP (`mcp-clickhouse`), Model Context Protocol, Zod, Jest, Vercel.
+
+### License
+MIT
+
+## Links
+
+- Hosted project: https://setready-ai.vercel.app
+- Public repository: https://github.com/aizoya/setready-ai
+- Submitted/public video: https://vimeo.com/1224759375
+- ClickHouse runtime proof: https://github.com/aizoya/setready-ai/blob/main/clickhouse_mcp_runtime_proof.json
+
+## Human-only gates
+
+1. Review and merge PR #7 after checks pass.
+2. Edit Vimeo/Devpost metadata from Gemini 3.7 to Gemini 2.5 Flash wherever the incorrect claim appears.
+3. Verify whether the incorrect model number is visible/spoken inside the submitted video; only consider replacing the video if the error is actually in the video and a clean correction is necessary.
+4. Ensure any license field/description says MIT, not Apache-2.0.
+5. Save the edited Devpost submission before September 9, 2026 at 2:00 PM Pacific.
+
+## Do not do before the deadline
+
+- No redesign.
+- No new feature work.
+- No architecture migration.
+- No unnecessary new video.
+- No change to the working golden path unless a genuine runtime blocker appears.
