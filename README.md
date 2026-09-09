@@ -53,9 +53,9 @@ A captured verification trace is available in [`clickhouse_mcp_runtime_proof.jso
 
 | Timestamp (UTC) | MCP event | Tool | Status |
 | --- | --- | --- | --- |
-| `2026-09-07T18:33:21Z` | `initialize` | system | SUCCESS |
-| `2026-09-07T18:33:22Z` | `tools/list` | system | SUCCESS |
-| `2026-09-07T18:33:22Z` | `tools/call` | `run_query` | SUCCESS |
+| `2026-09-07T21:27:33.878473Z` | `initialize` | system | SUCCESS |
+| `2026-09-07T21:27:34.144829Z` | `tools/list` | system | SUCCESS |
+| `2026-09-07T21:27:35.175674Z` | `tools/call` | `run_query` | SUCCESS |
 
 ## Safety and security
 
