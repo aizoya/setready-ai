@@ -18,17 +18,21 @@ Status: submitted before the September 9, 2026 deadline. Protect the submitted p
 
 ## Required post-submission corrections before the deadline
 
-### 1. Gemini model wording — factual metadata correction
+### 1. Gemini model wording — factual correction
 
-The current repository and judge-facing runtime use Gemini 2.5 Flash. The public Vimeo description currently says Gemini 3.7 / Gemini 3.7 Flash. Correct public metadata and any editable Devpost fields to Gemini 2.5 Flash.
+The current repository and judge-facing runtime use Gemini 2.5 Flash. The submitted Vimeo recording contains a spoken Gemini 3.7 / 3.7 Flash reference and the public Vimeo description also contains Gemini 3.7 wording. Replace the recording with a corrected version that says Gemini 2.5 Flash, and correct Vimeo/Devpost metadata to Gemini 2.5 Flash.
 
-Do not re-record the video solely because of metadata wording. First inspect whether the incorrect model number is only in the Vimeo description / Devpost text or is actually visible/spoken in the submitted video.
+Do not redesign the video or product. Re-record only the existing truthful golden path using the corrected model wording.
 
-### 2. Agent Engine wording — preserve claim boundary
+### 2. ClickHouse claim boundary — factual correction
+
+The judge-facing `/api/demo` runtime opens an authenticated session with the official ClickHouse MCP server and executes a live read-only query that proves runtime connectivity. The current demo query does not provide production scheduling facts to Gemini. Describe ClickHouse as live MCP/runtime connectivity proof, not as the source of operational evidence used to generate the recommendation.
+
+### 3. Agent Engine wording — preserve claim boundary
 
 The repository contains a separate Google ADK / Vertex AI Agent Engine implementation. The judge-facing browser golden path directly demonstrates Gemini + ClickHouse MCP through the hosted Next.js runtime. Do not claim that the browser request itself traverses Agent Engine unless that exact path is demonstrated.
 
-### 3. License wording
+### 4. License wording
 
 SetReady AI uses the MIT License. Public submission metadata should use **MIT** consistently and should not call the repository Apache-2.0.
 
@@ -38,16 +42,16 @@ SetReady AI uses the MIT License. Public submission metadata should use **MIT** 
 SetReady AI
 
 ### Tagline
-Production intelligence for film and television crews: turn schedule disruptions into evidence-backed, bounded operational recommendations.
+Production intelligence for film and television crews: turn schedule disruptions into bounded operational recommendations with live provider verification and human control.
 
 ### Inspiration
 Film and television sets operate under hard constraints: cast availability, crew time, company moves, daylight, location windows, setup dependencies, and budget pressure. When a scene falls behind, the challenge is reasoning quickly from incomplete operational context while preserving human authority and leaving evidence production leadership can inspect.
 
 ### What it does
-SetReady AI accepts a structured production disruption, validates the input deterministically, queries live runtime evidence through the official ClickHouse MCP server, and asks Gemini for a bounded recommendation designed for a 1st AD / UPM workflow. The recommendation focuses on immediate operational action, schedule/economic risk, and an explicit approval gate. SetReady does not autonomously alter a call sheet or production schedule.
+SetReady AI accepts a structured production disruption, validates the input deterministically, verifies live ClickHouse MCP runtime connectivity, and asks Gemini 2.5 Flash for a bounded recommendation designed for a 1st AD / UPM workflow. The recommendation focuses on immediate operational action, schedule/economic risk, and an explicit approval gate. SetReady does not autonomously alter a call sheet or production schedule.
 
 ### How we built it
-The judge-facing web application is built with Next.js and TypeScript and hosted on Vercel. The `/api/demo` runtime validates the disruption with Zod, initializes an authenticated session with the official ClickHouse MCP server running on Google Cloud Run, executes a live read-only ClickHouse query, obtains short-lived Google Cloud access using Vercel OIDC and Google Workload Identity Federation, and calls Gemini 2.5 Flash through Vertex AI. It returns a bounded recommendation with request-level provider status and runtime evidence.
+The judge-facing web application is built with Next.js and TypeScript and hosted on Vercel. The `/api/demo` runtime validates the disruption with Zod, initializes an authenticated session with the official ClickHouse MCP server running on Google Cloud Run, executes a live read-only ClickHouse query to verify runtime connectivity, obtains short-lived Google Cloud access using Vercel OIDC and Google Workload Identity Federation, and calls Gemini 2.5 Flash through Vertex AI. It returns a bounded recommendation with request-level provider status and runtime evidence.
 
 The repository also includes a separate Google ADK agent runtime under `agent_runtime/`, with Gemini 2.5 Flash, ClickHouse `run_query` exposed through `McpToolset`, and Vertex AI Agent Engine deployment/update code.
 
@@ -60,10 +64,10 @@ The repository also includes a separate Google ADK agent runtime under `agent_ru
 - Vertex AI Agent Engine
 
 ### Gemini usage
-Gemini 2.5 Flash generates the bounded operational recommendation in the hosted workflow using the reported production disruption and live ClickHouse MCP evidence.
+Gemini 2.5 Flash generates the bounded operational recommendation in the hosted workflow using the reported production disruption. The ClickHouse MCP call in the judge-facing demo independently verifies live runtime connectivity.
 
 ### ClickHouse usage
-SetReady actively uses ClickHouse at runtime through the official `mcp-clickhouse` server. The hosted demo initializes an authenticated MCP session and invokes `run_query` with a read-only SELECT statement. Captured runtime proof is included in the public repository.
+SetReady actively uses ClickHouse at runtime through the official `mcp-clickhouse` server. The hosted demo initializes an authenticated MCP session and invokes `run_query` with a read-only SELECT statement. That call verifies live ClickHouse/MCP connectivity, and captured runtime proof is included in the public repository.
 
 ### Agent Engine / Agent Builder usage
 The repository contains a Google ADK SetReady agent and Vertex AI Agent Engine deployment/update implementation. The ADK agent uses Gemini 2.5 Flash and exposes the official ClickHouse MCP `run_query` tool through `McpToolset`. The judge-facing browser workflow demonstrates Gemini + ClickHouse MCP directly through the hosted Next.js runtime; do not describe that browser request as traversing Agent Engine unless separately demonstrated.
@@ -99,16 +103,18 @@ MIT
 
 ## Human-only gates
 
-1. Review and merge PR #7 after checks pass.
-2. Edit Vimeo/Devpost metadata from Gemini 3.7 to Gemini 2.5 Flash wherever the incorrect claim appears.
-3. Verify whether the incorrect model number is visible/spoken inside the submitted video; only consider replacing the video if the error is actually in the video and a clean correction is necessary.
-4. Ensure any license field/description says MIT, not Apache-2.0.
-5. Save the edited Devpost submission before September 9, 2026 at 2:00 PM Pacific.
+1. Replace the Vimeo recording with a corrected version that says Gemini 2.5 Flash and contains no spoken/visible Gemini 3.7 reference.
+2. Edit Vimeo metadata from Gemini 3.7 to Gemini 2.5 Flash.
+3. Edit any Devpost Gemini 3.7 wording to Gemini 2.5 Flash.
+4. Ensure Devpost/public license wording says MIT, not Apache-2.0.
+5. Ensure ClickHouse wording describes the judge-facing query as live MCP/runtime connectivity proof, not production scheduling evidence supplied to Gemini.
+6. Save the edited Devpost submission before September 9, 2026 at 2:00 PM Pacific.
 
 ## Do not do before the deadline
 
 - No redesign.
 - No new feature work.
 - No architecture migration.
-- No unnecessary new video.
+- No provider change.
+- No unnecessary new feature or infrastructure work.
 - No change to the working golden path unless a genuine runtime blocker appears.
