@@ -9,6 +9,7 @@ Show one complete, truthful golden-path run in under three minutes while making 
 - Keep the browser zoom and text large enough for mobile/video playback.
 - Do not expose environment variables, tokens, passwords, Secret Manager values, or IAM policy details.
 - Record one clean take after confirming both providers are healthy.
+- Say **Gemini 2.5 Flash** exactly; do not say Gemini 3.7 / 3.7 Flash.
 
 ## 0:00–0:20 — Problem
 **On screen:** SetReady AI title and golden-path demo.
@@ -31,7 +32,7 @@ Use the default scenario:
 **On screen:** Click **Run live analysis**.
 
 **Narration while it runs:**
-“The request performs two live provider operations. First, SetReady opens an authenticated MCP session with the official ClickHouse MCP server running on Google Cloud Run and executes a read-only ClickHouse query. Then it authenticates from Vercel to Google Cloud with OIDC and Workload Identity Federation and asks Gemini for a bounded operational recommendation.”
+“The request performs two live provider operations. First, SetReady opens an authenticated MCP session with the official ClickHouse MCP server running on Google Cloud Run and executes a read-only query that verifies live ClickHouse runtime connectivity. Then it authenticates from Vercel to Google Cloud with OIDC and Workload Identity Federation and calls Gemini 2.5 Flash on Vertex AI for a bounded operational recommendation.”
 
 ## 1:20–1:50 — Provider proof
 **On screen:** Show both green badges.
@@ -47,19 +48,19 @@ Expected:
 **On screen:** Recommendation text.
 
 **Narration:**
-“Gemini returns a concise recommendation covering immediate action, schedule or economic risk, and an approval gate. The recommendation is evidence-informed, but SetReady does not autonomously change the schedule.”
+“Gemini 2.5 Flash returns a concise recommendation based on the reported production disruption, covering immediate action, schedule or economic risk, and an approval gate. SetReady does not autonomously change the schedule.”
 
 ## 2:25–2:45 — Deterministic controls
 **On screen:** Deterministic controls panel.
 
 **Narration:**
-“Deterministic controls keep the agent bounded: inputs are validated before provider calls, the ClickHouse demo query is read-only, and production schedule changes require human approval.”
+“Deterministic controls keep the agent bounded: inputs are validated before provider calls, the ClickHouse runtime query is read-only, and production schedule changes require human approval.”
 
 ## 2:45–3:00 — Runtime evidence and close
 **On screen:** Briefly expand **Runtime evidence** and show the live provider statuses/evidence without dwelling on raw JSON.
 
 **Narration:**
-“SetReady combines Gemini reasoning, Google Cloud identity and runtime infrastructure, and live ClickHouse evidence into one auditable production-operations workflow. This is the focused foundation for a larger production-intelligence system.”
+“SetReady combines Gemini 2.5 Flash reasoning, Google Cloud identity and runtime infrastructure, official ClickHouse MCP connectivity, deterministic controls, and human oversight in one production-operations workflow. This is the focused foundation for a larger production-intelligence system.”
 
 ## Recording acceptance checklist
 - Both provider badges green in the recorded run.
@@ -67,5 +68,6 @@ Expected:
 - Recommendation readable.
 - Runtime evidence briefly visible.
 - Human approval boundary mentioned.
+- **Gemini 2.5 Flash** is the only model version stated.
 - Final video <= 3:00.
 - Export at a readable resolution with clear audio.
